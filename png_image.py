@@ -29,3 +29,21 @@ class PNGImage:
     def display_image(self):
         image = Image.open(self.image_path)
         image.show()
+
+    def fft(self):
+        im = Image.open(self.image_path).convert("L")
+        np_im = np.asarray(im)
+
+        img_fft = np.fft.fft2(np_im)
+        shifted_fft = np.fft.fftshift(img_fft)
+        magnitude, phase = np.abs(shifted_fft), np.angle(shifted_fft)
+        magnitude = 20 * np.log(magnitude)
+        phase = 255 * (phase - phase.min()) / (phase.max() - phase.min())
+        magnitude = 255 * (magnitude - magnitude.min()) / (magnitude.max() - magnitude.min())
+        print(magnitude)
+
+        magnitude = Image.fromarray(magnitude.astype(np.uint8), "L")
+        phase = Image.fromarray(phase.astype(np.uint8), "L")
+
+        magnitude.show()
+        phase.show()
