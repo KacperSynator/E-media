@@ -1,7 +1,9 @@
 class Chunk:
+    # compression methods, only one possible
     compression_method = {
         0: "DEFLATE",
     }
+    # filter methods, only one possible
     filter_method = {
         0: "Adaptive",
     }
@@ -13,7 +15,7 @@ class Chunk:
         4: "grayscale with alpha",
         6: "true color with alpha"
     }
-
+    # descriptions for specific chunks
     chunks_description = {
         "IHDR": "image header",
         "PLTE": "palette: a list of colors",
@@ -23,19 +25,19 @@ class Chunk:
         "gAMA": "image gamma",
         "sRGB": "standard RGB colour space",
         "pHYs": "physical pixel dimensions",
-        "iTxt": "",
+        "tEXt": "textual data",
+        "iTXt": "international textual data",
         "zTXt": "compressed textual data",
         "iCCP": "embedded ICC profile",
         "tIME": "last modification time",
     }
-
+    # for sRGB chunk rendering intent
     standard_rgb = {
         0: "Perceptual",
         1: "Relative colorimetric",
         2: "Saturation",
         3: "Absolute colorimetric"
     }
-
 
     def __init__(self, chunk: list[int]):
         self.raw = chunk
@@ -57,10 +59,14 @@ class Chunk:
             self._parse_srgb_data()
         elif self.name == "pHYs":
             self._parse_phys_data()
+        elif self.name == "tEXt":
+            self._parse_text_data()
         elif self.name == "zTXt":
             self._parse_ztxt_data()
         elif self.name == "iCCP":
             self._parse_iccp_data()
+        elif self.name == "iTXt":
+            self._parse_itxt_data()
         elif self.name == "tIME":
             self._parse_time_data()
 
@@ -113,23 +119,55 @@ class Chunk:
         self.data["vertical_resolution (pixels per unit)"] = int.from_bytes(raw_data[4:8], byteorder="big")
         self.data["unit"] = "meter" if int.from_bytes(raw_data[8:9], byteorder="big") == 1 else "unknown"
 
-    def _parse_compressed_text_chunk(self):
-        raw_data = self.data["raw"]
-        keyword = ""
-        idx = 0
-        for idx, byte in enumerate(raw_data):
+    @staticmethod
+    def _get_text(data: list[int]) -> tuple:
+        text, idx = "", 0
+        for idx, byte in enumerate(data):
             if chr(byte) == '\0':
                 idx += 1
                 break
-            keyword += chr(byte)
+            text += chr(byte)
+        return text, idx
+
+    def _parse_text_data(self):
+        raw_data = self.data["raw"]
+        keyword, idx = self._get_text(raw_data)
         self.data["keyword"] = keyword
-        self.data["compression method"] = Chunk.compression_method[int.from_bytes(raw_data[idx:idx + 1], byteorder="big")]
+        text, _ = self._get_text(raw_data[idx:])
+        self.data["text"] = text
+
+    def _parse_compressed_text_chunk(self):
+        raw_data = self.data["raw"]
+        keyword, idx = self._get_text(raw_data)
+        self.data["keyword"] = keyword
+        self.data["compression_method"] = Chunk.compression_method[int.from_bytes(raw_data[idx:idx + 1], byteorder="big")]
+        self.data["compressed_text"] = raw_data[idx + 1:]
 
     def _parse_ztxt_data(self):
         self._parse_compressed_text_chunk()
 
     def _parse_iccp_data(self):
         self._parse_compressed_text_chunk()
+
+    def _parse_itxt_data(self):
+        raw_data = self.data["raw"]
+        keyword, idx = self._get_text(raw_data)
+        self.data["keyword"] = keyword
+        self.data["compression_flag"] = int.from_bytes(raw_data[idx:idx + 1], byteorder="big")
+        self.data["compression_method"] = Chunk.compression_method[
+            int.from_bytes(raw_data[idx + 1:idx + 2], byteorder="big")]
+        offset = idx + 2
+        language_tag, idx = self._get_text(raw_data[idx + 2:])
+        idx += offset
+        self.data["language_tag"] = language_tag
+        offset = idx
+        translated_keyword, idx = self._get_text(raw_data[idx:])
+        idx += offset
+        self.data["translated_keyword"] = translated_keyword
+        if self.data["compression_flag"] == 0:
+            self.data["text"], _ = self._get_text(raw_data[idx:])
+        else:
+            self.data["compressed_text"] = raw_data[idx:]
 
     def _parse_time_data(self):
         raw_data = self.data["raw"]
