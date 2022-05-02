@@ -64,5 +64,4 @@ class PNGImage:
         magnitude = Image.fromarray(magnitude.astype(np.uint8), "L")
         phase = Image.fromarray(phase.astype(np.uint8), "L")
 
-        magnitude.show()
-        phase.show()
+        return magnitude, phase
