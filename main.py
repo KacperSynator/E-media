@@ -2,7 +2,7 @@ from png_image import PNGImage
 
 
 def main():
-    png_im = PNGImage("data/")
+    png_im = PNGImage("data/.png")
     png_im.display_data()
     # png_im.display_image()
     # png_im.fft()

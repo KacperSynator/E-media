@@ -1,3 +1,6 @@
+import zlib
+
+
 class Chunk:
     # compression methods, only one possible
     compression_method = {
@@ -133,12 +136,12 @@ class Chunk:
 
     @staticmethod
     def _get_text(data: list[int]) -> tuple:
-        text, idx = "", 0
+        idx = 0
         for idx, byte in enumerate(data):
             if chr(byte) == '\0':
                 idx += 1
                 break
-            text += chr(byte)
+        text = bytearray(data[0:idx - 1]).decode("utf-8", "ignore")
         return text, idx
 
     def _parse_text_data(self):
@@ -148,18 +151,21 @@ class Chunk:
         text, _ = self._get_text(raw_data[idx:])
         self.data["text"] = text
 
-    def _parse_compressed_text_chunk(self):
+    def _parse_compressed_text_chunk(self, decode=True):
         raw_data = self.data["raw"]
         keyword, idx = self._get_text(raw_data)
         self.data["keyword"] = keyword
         self.data["compression_method"] = Chunk.compression_method[int.from_bytes(raw_data[idx:idx + 1], byteorder="big")]
-        self.data["compressed_text"] = raw_data[idx + 1:]
+        if decode:
+            self.data["text"] = zlib.decompress(bytearray(raw_data[idx + 1:])).decode("utf-8", "ignore")
+        else:
+            self.data["text"] = zlib.decompress(bytearray(raw_data[idx + 1:]))
 
     def _parse_ztxt_data(self):
         self._parse_compressed_text_chunk()
 
     def _parse_iccp_data(self):
-        self._parse_compressed_text_chunk()
+        self._parse_compressed_text_chunk(decode=False)
 
     def _parse_itxt_data(self):
         raw_data = self.data["raw"]
@@ -177,9 +183,9 @@ class Chunk:
         idx += offset
         self.data["translated_keyword"] = translated_keyword
         if self.data["compression_flag"] == 0:
-            self.data["text"], _ = self._get_text(raw_data[idx:])
+            self.data["text"] = bytearray(raw_data[idx:]).decode("utf-8", "ignore")
         else:
-            self.data["compressed_text"] = raw_data[idx:]
+            self.data["text"] = zlib.decompress(bytearray(raw_data[idx + 1:])).decode("utf-8", "ignore")
 
     def _parse_time_data(self):
         raw_data = self.data["raw"]
