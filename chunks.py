@@ -30,6 +30,10 @@ class Chunk:
         "zTXt": "compressed textual data",
         "iCCP": "embedded ICC profile",
         "tIME": "last modification time",
+        "bKGD": "background colour",
+        "cHRM": "primary chromaticities and white point",
+        "hIST": "image histogram",
+        "sPLT": "suggested palette",
     }
     # for sRGB chunk rendering intent
     standard_rgb = {
@@ -69,6 +73,14 @@ class Chunk:
             self._parse_itxt_data()
         elif self.name == "tIME":
             self._parse_time_data()
+        elif self.name == "bKGD":
+            self._parse_bkgd_data()
+        elif self.name == "cHRM":
+            self._parse_chrm_data()
+        elif self.name == "hIST":
+            self._parse_hist_data()
+        elif self.name == "sPLT":
+            self._parse_splt_data()
 
     def display(self, hide_raw_data=True):
         description = Chunk.chunks_description[self.name] if self.name in Chunk.chunks_description.keys() else ""
@@ -178,3 +190,42 @@ class Chunk:
         self.data["minute"] = int.from_bytes(raw_data[5:6], byteorder="big")
         self.data["second"] = int.from_bytes(raw_data[6:7], byteorder="big")
 
+    def _parse_bkgd_data(self):
+        raw_data = self.data["raw"]
+        # grayscale
+        if self.length == 2:
+            self.data["gray"] = int.from_bytes(raw_data[0:2], byteorder="big")
+        # color
+        elif self.length == 6:
+            self.data["red"] = int.from_bytes(raw_data[0:2], byteorder="big")
+            self.data["green"] = int.from_bytes(raw_data[2:4], byteorder="big")
+            self.data["blue"] = int.from_bytes(raw_data[4:6], byteorder="big")
+        # index color
+        elif self.length == 1:
+            self.data["palette_index"] = int.from_bytes(raw_data[0:1], byteorder="big")
+
+    def _parse_chrm_data(self):
+        raw_data = self.data["raw"]
+        self.data["white_point_x"] = int.from_bytes(raw_data[0:4], byteorder="big") / 100000
+        self.data["white_point_y"] = int.from_bytes(raw_data[4:8], byteorder="big") / 100000
+        self.data["red_x"] = int.from_bytes(raw_data[8:12], byteorder="big") / 100000
+        self.data["red_y"] = int.from_bytes(raw_data[12:16], byteorder="big") / 100000
+        self.data["green_x"] = int.from_bytes(raw_data[16:20], byteorder="big") / 100000
+        self.data["green_y"] = int.from_bytes(raw_data[20:24], byteorder="big") / 100000
+        self.data["blue_x"] = int.from_bytes(raw_data[24:28], byteorder="big") / 100000
+        self.data["blue_y"] = int.from_bytes(raw_data[28:32], byteorder="big") / 100000
+
+    def _parse_hist_data(self):
+        raw_data = self.data["raw"]
+        hist = []
+        for i in range(0, self.length, 2):
+            hist.append(int.from_bytes(raw_data[i:i+2], byteorder="big"))
+        self.data["histogram"] = hist
+
+    def _parse_splt_data(self):
+        raw_data = self.data["raw"]
+        name, idx = self._get_text(raw_data)
+        self.data["palette name"] = name
+        self.data["sample depth"] = int.from_bytes(raw_data[idx:idx + 1], byteorder="big")
+        entries_len = self.length - idx - 1
+        self.data["number of entries"] = entries_len // 10 if self.data["sample depth"] == 16 else entries_len // 6

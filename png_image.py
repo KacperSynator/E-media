@@ -30,6 +30,14 @@ class PNGImage:
         image = Image.open(self.image_path)
         image.show()
 
+    def anonymize(self, out_file: str):
+        critical_chunks = list(filter(lambda chunk: chunk.name in ["IHDR", "IEND", "PLTE", "IDAT"], self.chunks))
+        critical_chunks = list(map(lambda chunk: chunk.raw, critical_chunks))
+        with open(out_file, "wb") as file:
+            file.write(bytearray(self.header))
+            for chunk in critical_chunks:
+                file.write(bytearray(chunk))
+
     def fft(self):
         im = Image.open(self.image_path).convert("L")
         np_im = np.asarray(im)
@@ -40,7 +48,6 @@ class PNGImage:
         magnitude = 20 * np.log(magnitude)
         phase = 255 * (phase - phase.min()) / (phase.max() - phase.min())
         magnitude = 255 * (magnitude - magnitude.min()) / (magnitude.max() - magnitude.min())
-        print(magnitude)
 
         magnitude = Image.fromarray(magnitude.astype(np.uint8), "L")
         phase = Image.fromarray(phase.astype(np.uint8), "L")
