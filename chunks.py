@@ -94,6 +94,16 @@ class Chunk:
             print(f"\t\t{key}: {value}")
         print(f"\tcrc: {self.crc}")
 
+    def to_sting(self, hide_raw_data=True):
+        description = Chunk.chunks_description[self.name] if self.name in Chunk.chunks_description.keys() else ""
+        result = f"Chunk: {self.name}  ({description})\n\tlength: {self.length}\n\tdata:\n"
+        for key, value in self.data.items():
+            if hide_raw_data and key == "raw":
+                continue
+            result += f"\t\t{key}: {value}\n"
+        result += f"\tcrc: {self.crc}\n"
+        return result
+
     def _parse_ihdr_data(self):
         raw_data = self.data["raw"]
         self.data["width"] = int.from_bytes(raw_data[0:4], byteorder="big")

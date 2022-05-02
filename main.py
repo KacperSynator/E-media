@@ -1,12 +1,9 @@
 from png_image import PNGImage
+from gui import GUI
 
 
 def main():
-    png_im = PNGImage("data/.png")
-    png_im.display_data()
-    # png_im.display_image()
-    # png_im.fft()
-    # png_im.anonymize("data/out.png")
+    gui = GUI()
 
 
 if __name__ == '__main__':

@@ -26,9 +26,21 @@ class PNGImage:
         for chunk in self.chunks:
             chunk.display(hide_raw_data)
 
+    def to_string(self, hide_raw_data=True):
+        header_name = "".join([chr(c) for c in self.header[1:4]])
+        result = f"Header: {header_name}\n\t raw: {self.header}\n"
+        result += "\n--------------------------------------------------------------------------------\n\n"
+        for chunk in self.chunks:
+            result += chunk.to_sting(hide_raw_data)
+            result += "\n--------------------------------------------------------------------------------\n\n"
+        return result
+
     def display_image(self):
         image = Image.open(self.image_path)
         image.show()
+
+    def get_image(self) -> Image:
+        return Image.open(self.image_path)
 
     def anonymize(self, out_file: str):
         critical_chunks = list(filter(lambda chunk: chunk.name in ["IHDR", "IEND", "PLTE", "IDAT"], self.chunks))
