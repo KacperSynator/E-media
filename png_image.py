@@ -21,10 +21,7 @@ class PNGImage:
             start_idx = end_idx
 
     def display_data(self, hide_raw_data=True):
-        header_name = "".join([chr(c) for c in self.header[1:4]])
-        print(f"Header: {header_name}\n\t raw: {self.header}")
-        for chunk in self.chunks:
-            chunk.display(hide_raw_data)
+        print(self.to_string(hide_raw_data=hide_raw_data))
 
     def to_string(self, hide_raw_data=True):
         header_name = "".join([chr(c) for c in self.header[1:4]])

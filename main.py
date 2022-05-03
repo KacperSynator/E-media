@@ -1,4 +1,3 @@
-from png_image import PNGImage
 from gui import GUI
 
 

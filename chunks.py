@@ -1,4 +1,6 @@
 import zlib
+from PIL.ExifTags import TAGS
+import struct
 
 
 class Chunk:
@@ -37,6 +39,7 @@ class Chunk:
         "cHRM": "primary chromaticities and white point",
         "hIST": "image histogram",
         "sPLT": "suggested palette",
+        "eXIf": "exif data"
     }
     # for sRGB chunk rendering intent
     standard_rgb = {
@@ -84,15 +87,11 @@ class Chunk:
             self._parse_hist_data()
         elif self.name == "sPLT":
             self._parse_splt_data()
+        elif self.name == "eXIf":
+            self._parse_exif_data()
 
     def display(self, hide_raw_data=True):
-        description = Chunk.chunks_description[self.name] if self.name in Chunk.chunks_description.keys() else ""
-        print(f"Chunk: {self.name}  ({description})\n\tlength: {self.length}\n\tdata:")
-        for key, value in self.data.items():
-            if hide_raw_data and key == "raw":
-                continue
-            print(f"\t\t{key}: {value}")
-        print(f"\tcrc: {self.crc}")
+        print(self.to_sting(hide_raw_data=hide_raw_data))
 
     def to_sting(self, hide_raw_data=True):
         description = Chunk.chunks_description[self.name] if self.name in Chunk.chunks_description.keys() else ""
@@ -245,3 +244,100 @@ class Chunk:
         self.data["sample depth"] = int.from_bytes(raw_data[idx:idx + 1], byteorder="big")
         entries_len = self.length - idx - 1
         self.data["number of entries"] = entries_len // 10 if self.data["sample depth"] == 16 else entries_len // 6
+
+    def _parse_exif_data(self):
+        raw_data = self.data["raw"]
+        order_code = f"{chr(raw_data[0])}{chr(raw_data[1])}"
+
+        if order_code == "MM":
+            byteorder = "big"
+        elif order_code == "II":
+            byteorder = "little"
+        else:
+            self.data["error"] = "header: invalid byteorder"
+            return
+
+        if int.from_bytes(raw_data[2:4], byteorder=byteorder) != 42:
+            self.data["error"] = "header: not a tiff"
+            return
+
+        offset = int.from_bytes(raw_data[4:8], byteorder=byteorder)
+        while offset != 0:
+            offset = self._parse_ifd(raw_data, offset, byteorder)
+
+    def _parse_ifd(self, data, offset, byteorder):
+        number_of_entries = int.from_bytes(data[offset: offset + 2], byteorder=byteorder)
+        offset += 2
+
+        for _ in range(number_of_entries):
+            tag_id = int.from_bytes(data[offset: offset + 2], byteorder=byteorder)
+            offset += 2
+            tag = TAGS[tag_id] if tag_id in TAGS.keys() else f"unknown tag: {hex(tag_id)}"
+            tag_type = int.from_bytes(data[offset: offset + 2], byteorder=byteorder)
+            offset += 2
+            count = int.from_bytes(data[offset: offset + 4], byteorder=byteorder)
+            offset += 4
+            data_value = int.from_bytes(data[offset: offset + 4], byteorder=byteorder)
+
+            # unsigned byte
+            if tag_type == 1:
+                if byteorder == "big":
+                    decoded_data = int.from_bytes(data[offset: offset + 1], byteorder=byteorder)
+                else:
+                    decoded_data = int.from_bytes(data[offset + 3: offset + 4], byteorder=byteorder)
+            # ascii string
+            elif tag_type == 2:
+                if count <= 4:
+                    decoded_data = data_value.to_bytes(byteorder=byteorder, length=4).decode("ascii")
+                else:
+                    decoded_data = "".join(chr(c) for c in data[data_value: data_value + count - 1])
+            # unsigned short
+            elif tag_type == 3:
+                if byteorder == "big":
+                    decoded_data = int.from_bytes(data[offset: offset + 2], byteorder=byteorder)
+                else:
+                    decoded_data = int.from_bytes(data[offset + 2: offset + 4], byteorder=byteorder)
+            # unsigned long
+            elif tag_type == 4:
+                decoded_data = int.from_bytes(data[offset: offset + 4], byteorder=byteorder)
+            # unsigned rational (fractal)
+            elif tag_type == 5:
+                numerator = int.from_bytes(data[data_value: data_value + 4], byteorder=byteorder)
+                denominator = int.from_bytes(data[data_value + 4: data_value + 8], byteorder=byteorder)
+                decoded_data = numerator / denominator
+            # signed byte / signed short / signed long
+            elif tag_type == 6:
+                if byteorder == "big":
+                    decoded_data = int.from_bytes(data[offset: offset + 1], byteorder=byteorder, signed=True)
+                else:
+                    decoded_data = int.from_bytes(data[offset + 3: offset + 4], byteorder=byteorder, signed=True)
+            # signed short
+            elif tag_type == 8:
+                if byteorder == "big":
+                    decoded_data = int.from_bytes(data[offset: offset + 2], byteorder=byteorder, signed=True)
+                else:
+                    decoded_data = int.from_bytes(data[offset + 2: offset + 4], byteorder=byteorder, signed=True)
+            # signed long
+            elif tag_type == 9:
+                decoded_data = int.from_bytes(data[offset: offset + 4], byteorder=byteorder, signed=True)
+            # signed rational
+            elif tag_type == 10:
+                numerator = int.from_bytes(data[data_value: data_value + 4], byteorder=byteorder, signed=True)
+                denominator = int.from_bytes(data[data_value + 4: data_value + 8], byteorder=byteorder, signed=True)
+                decoded_data = numerator / denominator
+            # single float
+            elif tag_type == 11:
+                decoded_data = struct.unpack("f", data[offset: offset + 4])
+            # double float
+            elif tag_type == 12:
+                decoded_data = struct.unpack("f", data[data_value: data_value + 8])
+            # undefined / other
+            else:
+                decoded_data = f"undefined format value: {tag_type}"
+
+            self.data[tag] = decoded_data
+            # skip data value
+            offset += 4
+
+        next_ifd_offset = int.from_bytes(data[offset: offset + 4], byteorder=byteorder)
+        return next_ifd_offset  # if next_ifd_offset != 0 else "end"
