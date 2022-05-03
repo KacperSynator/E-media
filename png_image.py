@@ -55,8 +55,13 @@ class PNGImage:
         shifted_fft = np.fft.fftshift(img_fft)
         magnitude, phase = np.abs(shifted_fft), np.angle(shifted_fft)
         magnitude = 20 * np.log(magnitude)
-        phase = 255 * (phase - phase.min()) / (phase.max() - phase.min())
-        magnitude = 255 * (magnitude - magnitude.min()) / (magnitude.max() - magnitude.min())
+        # phase = 255 * (phase - phase.min()) / (phase.max() - phase.min())
+        # magnitude = 255 * (magnitude - magnitude.min()) / (magnitude.max() - magnitude.min())
+
+        phase *= 255 / phase.max()
+        magnitude *= 255 / magnitude.max()
+        phase = np.abs(phase)
+        magnitude = np.abs(magnitude)
 
         magnitude = Image.fromarray(magnitude.astype(np.uint8), "L")
         phase = Image.fromarray(phase.astype(np.uint8), "L")

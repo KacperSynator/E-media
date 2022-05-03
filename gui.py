@@ -73,10 +73,6 @@ class GUI:
         self.text_scroll.insert(tk.INSERT, self.png.to_string())
         self.text_scroll.configure(state="disabled")
         # grid #
-        self.window.columnconfigure(0, weight=1)
-        self.window.columnconfigure(1, weight=1)
-        self.window.columnconfigure(2, weight=1)
-        self.window.columnconfigure(3, weight=10)
         self.file_label.grid(row=2, column=0, columnspan=4, sticky="W", padx=10, pady=10)
         self.file_button.grid(row=0, column=0, padx=10, pady=10, sticky="NSEW")
         self.anonymize_button.grid(row=0, column=1, padx=10, pady=10, sticky="NSEW")
@@ -132,7 +128,7 @@ class GUI:
         self.fft_phase_image.grid_forget()
         self.image_chunks_button.grid_forget()
         self.image.grid(row=1, column=0, columnspan=4, padx=10)
-        self.text_scroll.grid(row=1, column=4, padx=10)
+        self.text_scroll.grid(row=1, column=4, padx=10, sticky="NSEW")
         self.fft_button.grid(row=0, column=2, padx=10, pady=10, sticky="NSEW")
 
     def browse_files(self):
