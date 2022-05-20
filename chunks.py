@@ -57,38 +57,39 @@ class Chunk:
         self.data = {"raw": chunk[8:data_end_idx]}
         self.crc = chunk[data_end_idx:data_end_idx + 4]
 
-        if self.name == "IHDR":
-            self._parse_ihdr_data()
-        elif self.name == "PLTE":
-            self._parse_plte_data()
-        elif self.name == "sBIT":
-            self._parse_sbit_data()
-        elif self.name == "gAMA":
-            self._parse_gama_data()
-        elif self.name == "sRGB":
-            self._parse_srgb_data()
-        elif self.name == "pHYs":
-            self._parse_phys_data()
-        elif self.name == "tEXt":
-            self._parse_text_data()
-        elif self.name == "zTXt":
-            self._parse_ztxt_data()
-        elif self.name == "iCCP":
-            self._parse_iccp_data()
-        elif self.name == "iTXt":
-            self._parse_itxt_data()
-        elif self.name == "tIME":
-            self._parse_time_data()
-        elif self.name == "bKGD":
-            self._parse_bkgd_data()
-        elif self.name == "cHRM":
-            self._parse_chrm_data()
-        elif self.name == "hIST":
-            self._parse_hist_data()
-        elif self.name == "sPLT":
-            self._parse_splt_data()
-        elif self.name == "eXIf":
-            self._parse_exif_data()
+        match self.name:
+            case "IHDR":
+                self._parse_ihdr_data()
+            case "PLTE":
+                self._parse_plte_data()
+            case "sBIT":
+                self._parse_sbit_data()
+            case "gAMA":
+                self._parse_gama_data()
+            case "sRGB":
+                self._parse_srgb_data()
+            case "pHYs":
+                self._parse_phys_data()
+            case "tEXt":
+                self._parse_text_data()
+            case "zTXt":
+                self._parse_ztxt_data()
+            case "iCCP":
+                self._parse_iccp_data()
+            case "iTXt":
+                self._parse_itxt_data()
+            case "tIME":
+                self._parse_time_data()
+            case "bKGD":
+                self._parse_bkgd_data()
+            case "cHRM":
+                self._parse_chrm_data()
+            case "hIST":
+                self._parse_hist_data()
+            case "sPLT":
+                self._parse_splt_data()
+            case "eXIf":
+                self._parse_exif_data()
 
     def display(self, hide_raw_data=True):
         print(self.to_sting(hide_raw_data=hide_raw_data))
