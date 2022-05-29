@@ -1,7 +1,9 @@
-from PIL import Image
+from PIL import Image, ImageFile
 import numpy as np
 from chunks import Chunk
-
+from rsa import MyRSA
+from block_cipher import ElectronicCodeBook
+# ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class PNGImage:
     def __init__(self, image_path: str):
@@ -11,6 +13,7 @@ class PNGImage:
         self.header = content[0:8]
         self.chunks = []
         self._read_chunks(content[8:])
+        self._rsa = None
 
     def _read_chunks(self, image: list[int]):
         start_idx, end_idx = 0, 0
@@ -60,10 +63,48 @@ class PNGImage:
 
         phase *= 255 / phase.max()
         magnitude *= 255 / magnitude.max()
-        phase = np.abs(phase)
+        # phase = np.abs(phase)
         magnitude = np.abs(magnitude)
 
         magnitude = Image.fromarray(magnitude.astype(np.uint8), "L")
         phase = Image.fromarray(phase.astype(np.uint8), "L")
 
         return magnitude, phase
+
+    def encrypt(self, number_of_bits):
+        if not self._rsa:
+            self._rsa = MyRSA(number_of_bits)
+        idat_chunks = list(filter(lambda chunk: chunk.name == "IDAT", self.chunks))
+        for chunk in idat_chunks:
+            encrypted_data = self._encrypt_chunk_data(chunk.raw)
+            chunk.raw = len(encrypted_data).to_bytes(4, "big") + bytearray(chunk.raw[4:8]) + encrypted_data + bytearray(chunk.raw[-4:])
+            chunk.update_crc()
+
+    def decrypt(self, number_of_bits):
+        if not self._rsa:
+            self._rsa = MyRSA(number_of_bits)
+        idat_chunks = list(filter(lambda chunk: chunk.name == "IDAT", self.chunks))
+        for chunk in idat_chunks:
+            decrypted_data = self._decrypt_chunk_data(chunk.raw)
+            chunk.raw = len(decrypted_data).to_bytes(4, "big") + bytearray(chunk.raw[4:8]) + decrypted_data + bytearray(chunk.raw[-4:])
+            chunk.update_crc()
+
+    def _encrypt_chunk_data(self, raw_chunk):
+        beg_idx, end_idx = 0, self._rsa.num_bytes - ElectronicCodeBook.padding_len
+        result = bytearray()
+        chunk_data = raw_chunk[8:-4]
+        while beg_idx < len(chunk_data):
+            result += ElectronicCodeBook.encrypt(self._rsa, chunk_data[beg_idx: end_idx])
+            beg_idx = end_idx
+            end_idx += self._rsa.num_bytes - ElectronicCodeBook.padding_len
+        return result
+
+    def _decrypt_chunk_data(self, raw_chunk):
+        beg_idx, end_idx = 0, self._rsa.num_bytes
+        result = bytearray()
+        chunk_data = raw_chunk[8:-4]
+        while beg_idx < len(chunk_data):
+            result += ElectronicCodeBook.decrypt(self._rsa, chunk_data[beg_idx: end_idx])
+            beg_idx = end_idx
+            end_idx += self._rsa.num_bytes
+        return result

@@ -4,11 +4,17 @@ import math
 
 class MyRSA:
     def __init__(self, number_of_bits=1024):
-        self._mod, self._pub_exp, self._pvt_exp = self.generate_keys()
+        self._mod, self._pub_exp, self._pvt_exp = self.generate_keys(number_of_bits)
+        self._num_bits = number_of_bits
 
-    def generate_keys(self, number_of_bits=1024):
-        p = getPrime(number_of_bits)
-        q = getPrime(number_of_bits)
+    @property
+    def num_bytes(self):
+        return self._num_bits // 8
+
+    @staticmethod
+    def generate_keys(number_of_bits=1024):
+        p = getPrime(number_of_bits // 2)
+        q = getPrime(number_of_bits // 2)
         n = p * q
         lcm = math.lcm(p-1, q-1)
         e = MyRSA.random_coprime_below(lcm, number_of_bits // 2)

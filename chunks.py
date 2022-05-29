@@ -101,8 +101,16 @@ class Chunk:
             if hide_raw_data and key == "raw":
                 continue
             result += f"\t\t{key}: {value}\n"
-        result += f"\tcrc: {self.crc}\n"
+        result += f"\tcrc: {hex(int.from_bytes(self.crc, byteorder='big'))}\n"
         return result
+
+    def calculate_crc(self):
+        return zlib.crc32(bytearray(self.raw[4:-4]))
+
+    def update_crc(self):
+        self.crc = self.calculate_crc()
+        byte_crc = self.crc.to_bytes(4, byteorder="big")
+        self.raw = bytearray(self.raw[:-4]) + byte_crc
 
     def _parse_ihdr_data(self):
         raw_data = self.data["raw"]

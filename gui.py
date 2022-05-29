@@ -54,6 +54,22 @@ class GUI:
             fg="white",
             command=self.get_fft
         )
+        # button for encrypting image
+        self.encrypt_button = tk.Button(
+            self.window,
+            text="Encrypt",
+            bg="black",
+            fg="white",
+            command=self.encrypt
+        )
+        # button for decrypting image
+        self.decrypt_button = tk.Button(
+            self.window,
+            text="Decrypt",
+            bg="black",
+            fg="white",
+            command=self.decrypt
+        )
         # displayed image
         self.image = tk.Label(
             self.window,
@@ -76,7 +92,10 @@ class GUI:
         self.file_label.grid(row=2, column=0, columnspan=4, sticky="W", padx=10, pady=10)
         self.file_button.grid(row=0, column=0, padx=10, pady=10, sticky="NSEW")
         self.anonymize_button.grid(row=0, column=1, padx=10, pady=10, sticky="NSEW")
+        self.file_button.grid(row=0, column=0, padx=10, pady=10, sticky="NSEW")
         self.fft_button.grid(row=0, column=2, padx=10, pady=10, sticky="NSEW")
+        self.encrypt_button.grid(row=0, column=3, padx=10, pady=10, sticky="NSEW")
+        self.decrypt_button.grid(row=0, column=4, padx=10, pady=10, sticky="NSEW")
         self.image.grid(row=1, column=0, columnspan=4, padx=10)
         self.text_scroll.grid(row=1, column=4, padx=10, sticky="NSEW")
         # main loop #
@@ -88,8 +107,8 @@ class GUI:
         return ImageTk.PhotoImage(image)
 
     def anonymize_image(self):
-        self.png.anonymize(self.png.image_path)
-        self.png = PNGImage(self.png.image_path)
+        self.png.anonymize("data/out.png")  # self.png.image_path
+        self.png = PNGImage("data/out.png")  # self.png.image_path
         self.update_scroll_text()
 
     def update_image(self):
@@ -141,3 +160,10 @@ class GUI:
         self.file_label.configure(text=f"File path: {filename}")
         self.display_image_chunks()
 
+    def encrypt(self):
+        self.png.encrypt(1024)
+        self.update_image()
+
+    def decrypt(self):
+        self.png.decrypt(1024)
+        self.update_image()
