@@ -112,6 +112,13 @@ class Chunk:
         byte_crc = self.crc.to_bytes(4, byteorder="big")
         self.raw = bytearray(self.raw[:-4]) + byte_crc
 
+    def decompress_data(self):
+        if self.name != "IDAT":
+            return
+        decompressed_data = zlib.decompress(bytearray(self.raw[8:-4]))
+        self.length = len(decompressed_data)
+        self.raw = bytearray(self.length.to_bytes(4, "big")) + bytearray(self.raw[4:8]) + decompressed_data + bytearray(self.raw[-4:])
+
     def _parse_ihdr_data(self):
         raw_data = self.data["raw"]
         self.data["width"] = int.from_bytes(raw_data[0:4], byteorder="big")
