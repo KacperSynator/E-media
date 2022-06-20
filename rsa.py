@@ -3,13 +3,33 @@ import math
 
 
 class MyRSA:
-    def __init__(self, number_of_bits=1024):
-        self._mod, self._pub_exp, self._pvt_exp = self.generate_keys(number_of_bits)
+    def __init__(self, number_of_bits=1024, generate_keys=False):
+        if generate_keys:
+            self._mod, self._pub_exp, self._pvt_exp = self.generate_keys(number_of_bits)
         self._num_bits = number_of_bits
 
     @property
     def num_bytes(self):
         return self._num_bits // 8
+
+    @property
+    def pub_exp(self):
+        return self._pub_exp
+
+    @property
+    def pvt_exp(self):
+        return self._pvt_exp
+
+    @property
+    def mod(self):
+        return self._mod
+
+    @property
+    def keys(self):
+        return self._mod, self._pub_exp, self.pvt_exp
+
+    def set_keys(self, mod, pub_exp, pvt_exp):
+        self._mod, self._pub_exp, self._pvt_exp = mod, pub_exp, pvt_exp
 
     @staticmethod
     def generate_keys(number_of_bits=1024):
