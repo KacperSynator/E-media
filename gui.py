@@ -1,11 +1,17 @@
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, ttk
 import tkinter.scrolledtext as scrolled_text
 from png_image import PNGImage
+from block_cipher import ElectronicCodeBook, Counter
 from PIL import Image, ImageTk
 
 
 class GUI:
+    BlockCiphers = {
+        "ElectronicCodeBook": ElectronicCodeBook,
+        "Counter": Counter,
+    }
+
     def __init__(self):
         # main window #
         self.window = tk.Tk()
@@ -14,6 +20,8 @@ class GUI:
         # current image #
         self.png = PNGImage("data/dices.png")
         image = self.get_photo_image()
+        # block cipher
+        self.block_cipher = tk.StringVar()
         # widgets #
         # label with file path
         self.file_label = tk.Label(
@@ -21,6 +29,14 @@ class GUI:
             text=f"File path: {self.png.image_path}",
             bg="black",
             fg="white"
+        )
+        # label with Block Cipher
+        self.bc_label = tk.Label(
+            self.window,
+            text="Block Cipher:",
+            font="bold",
+            bg="black",
+            fg="white",
         )
         # button for browsing files
         self.file_button = tk.Button(
@@ -70,6 +86,22 @@ class GUI:
             fg="white",
             command=self.decrypt
         )
+        # button for generating rsa keys
+        self.rsa_gen_button = tk.Button(
+            self.window,
+            text="Generate Keys",
+            bg="black",
+            fg="white",
+            command=self.generate_keys,
+        )
+        # block cipher combo_box
+        self.block_cipher_cbox = ttk.Combobox(
+            self.window,
+            values=list(self.BlockCiphers.keys()),
+            state="readonly",
+            textvariable=self.block_cipher,
+        )
+        self.block_cipher_cbox.set(list(self.BlockCiphers.keys())[0])
         # displayed image
         self.image = tk.Label(
             self.window,
@@ -89,15 +121,18 @@ class GUI:
         self.text_scroll.insert(tk.INSERT, self.png.to_string())
         self.text_scroll.configure(state="disabled")
         # grid #
-        self.file_label.grid(row=2, column=0, columnspan=4, sticky="W", padx=10, pady=10)
+        self.file_label.grid(row=3, column=0, columnspan=4, sticky="W", padx=10, pady=10)
+        self.bc_label.grid(row=1, column=1, padx=10, pady=10)
         self.file_button.grid(row=0, column=0, padx=10, pady=10, sticky="NSEW")
-        self.anonymize_button.grid(row=0, column=1, padx=10, pady=10, sticky="NSEW")
-        self.file_button.grid(row=0, column=0, padx=10, pady=10, sticky="NSEW")
-        self.fft_button.grid(row=0, column=2, padx=10, pady=10, sticky="NSEW")
-        self.encrypt_button.grid(row=0, column=3, padx=10, pady=10, sticky="NSEW")
-        self.decrypt_button.grid(row=0, column=4, padx=10, pady=10, sticky="NSEW")
-        self.image.grid(row=1, column=0, columnspan=4, padx=10)
-        self.text_scroll.grid(row=1, column=4, padx=10, sticky="NSEW")
+        self.anonymize_button.grid(row=1, column=0, padx=10, pady=10, sticky="NSEW")
+        self.fft_button.grid(row=0, column=1, padx=10, pady=10, sticky="NSEW")
+        self.image_chunks_button.grid(row=0, column=1, padx=10, pady=10, sticky="NSEW")
+        self.encrypt_button.grid(row=0, column=2, padx=10, pady=10, sticky="NSEW")
+        self.decrypt_button.grid(row=0, column=3, padx=10, pady=10, sticky="NSEW")
+        self.rsa_gen_button.grid(row=1, column=3, padx=10, pady=10, sticky="NSEW")
+        self.block_cipher_cbox.grid(row=1, column=2, padx=10, pady=10, sticky="NSEW")
+        self.image.grid(row=2, column=0, columnspan=4, padx=10)
+        self.text_scroll.grid(row=2, column=4, columnspan=2, padx=10, sticky="NSEW")
         # main loop #
         self.window.mainloop()
 
@@ -138,17 +173,17 @@ class GUI:
         self.image.grid_forget()
         self.text_scroll.grid_forget()
         self.fft_button.grid_forget()
-        self.fft_mag_image.grid(row=1, column=0, columnspan=4, padx=10)
-        self.fft_phase_image.grid(row=1, column=4, padx=10)
-        self.image_chunks_button.grid(row=0, column=2, padx=10, pady=10, sticky="NSEW")
+        self.fft_mag_image.grid(row=2, column=0, columnspan=4, padx=10)
+        self.fft_phase_image.grid(row=2, column=4, columnspan=2, padx=10)
+        self.image_chunks_button.grid(row=0, column=1, padx=10, pady=10, sticky="NSEW")
 
     def display_image_chunks(self):
         self.fft_mag_image.grid_forget()
         self.fft_phase_image.grid_forget()
         self.image_chunks_button.grid_forget()
-        self.image.grid(row=1, column=0, columnspan=4, padx=10)
-        self.text_scroll.grid(row=1, column=4, padx=10, sticky="NSEW")
-        self.fft_button.grid(row=0, column=2, padx=10, pady=10, sticky="NSEW")
+        self.image.grid(row=2, column=0, columnspan=4, padx=10)
+        self.text_scroll.grid(row=2, column=4, columnspan=2, padx=10, sticky="NSEW")
+        self.fft_button.grid(row=0, column=1, padx=10, pady=10, sticky="NSEW")
 
     def browse_files(self):
         filename = tk.filedialog.askopenfilename(title="Select file", filetypes=[("image files", ".png")])
@@ -161,9 +196,12 @@ class GUI:
         self.display_image_chunks()
 
     def encrypt(self):
-        self.png.encrypt(1024)
+        self.png.encrypt(1024, cipher_block=self.BlockCiphers[self.block_cipher.get()])
         self.update_image()
 
     def decrypt(self):
-        self.png.decrypt(1024)
+        self.png.decrypt(1024, cipher_block=self.BlockCiphers[self.block_cipher.get()])
         self.update_image()
+
+    def generate_keys(self):
+        pass

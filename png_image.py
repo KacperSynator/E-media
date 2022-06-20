@@ -87,28 +87,24 @@ class PNGImage:
         idats[0].raw = bytearray(new_idat_len.to_bytes(4, "big")) + bytearray("IDAT".encode("ascii")) + new_idat_data + bytearray("chuj".encode("ascii"))
         idats[0].length = new_idat_len
 
-    def encrypt(self, number_of_bits):
+    def encrypt(self, number_of_bits, cipher_block):
         if not self._rsa:
             self._rsa = MyRSA(number_of_bits)
         self.join_idat_chunks()
         idat_chunks = tuple(filter(lambda chunk_: chunk_.name == "IDAT", self.chunks))
-        with Pool() as pool:
-            res = pool.map(self._encrypt_chunk_data, idat_chunks)
-        for chunk, new in zip(idat_chunks, res):
-            chunk.raw = new
+        for chunk in idat_chunks:
+            chunk.raw = self._encrypt_chunk_data(chunk, cipher_block)
 
-    def decrypt(self, number_of_bits):
+    def decrypt(self, number_of_bits, cipher_block):
         if not self._rsa:
             self._rsa = MyRSA(number_of_bits)
         idat_chunks = list(filter(lambda chunk_: chunk_.name == "IDAT", self.chunks))
-        with Pool() as pool:
-            res = pool.map(self._decrypt_chunk_data, idat_chunks)
-        for chunk, new in zip(idat_chunks, res):
-            chunk.raw = new
+        for chunk in idat_chunks:
+            chunk.raw = self._decrypt_chunk_data(chunk, cipher_block)
 
-    def _encrypt_chunk_data(self, chunk):
+    def _encrypt_chunk_data(self, chunk, cipher_block):
         chunk.decompress_data()
-        result = ElectronicCodeBook.encrypt(self._rsa, chunk.raw[8:-4])
+        result = cipher_block.encrypt(self._rsa, chunk.raw[8:-4])
         compressed_result = bytearray(zlib.compress(result))
         compressed_result1 = bytearray(zlib.compress(result[:chunk.length])[2:-4])
         compressed_result2 = bytearray(zlib.compress(result[chunk.length:])[2:-4])
@@ -122,8 +118,8 @@ class PNGImage:
         # text_chunk = bytearray((len(compressed_result) - chunk.length).to_bytes(4, "big")) + bytearray("tEXt".encode("ascii")) + compressed_result[chunk.length:] + bytearray(chunk.raw[-4:])
         return chunk.raw #+ text_chunk
 
-    def _decrypt_chunk_data(self, chunk):
-        result = ElectronicCodeBook.decrypt(self._rsa, chunk.raw[8:-4])
+    def _decrypt_chunk_data(self, chunk, cipher_block):
+        result = cipher_block.decrypt(self._rsa, chunk.raw[8:-4])
         chunk.raw = len(result).to_bytes(4, "big") + bytearray(chunk.raw[4:8]) + result + bytearray(chunk.raw[-4:])
         chunk.update_crc()
         return chunk.raw
