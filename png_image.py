@@ -83,6 +83,7 @@ class PNGImage:
             self.chunks.remove(idat)
         idats[0].raw = bytearray(new_idat_len.to_bytes(4, "big")) + bytearray("IDAT".encode("ascii")) + new_idat_data + bytearray("chuj".encode("ascii"))
         idats[0].length = new_idat_len
+        idats[0].update_crc()
 
     def encrypt(self, rsa, cipher_block):
         self.join_idat_chunks()
@@ -109,10 +110,13 @@ class PNGImage:
         # chunk.raw = zlib.compress(result, 8)[2:-4]
         # chunk.raw = bytearray(len(compressed_result1).to_bytes(4, "big")) + bytearray(chunk.raw[4:8]) + compressed_result1 + bytearray( chunk.raw[-4:])
         # text_chunk = bytearray((len(compressed_result) - chunk.length).to_bytes(4, "big")) + bytearray("tEXt".encode("ascii")) + compressed_result[chunk.length:] + bytearray(chunk.raw[-4:])
+        chunk.update_crc()
         return chunk.raw #+ text_chunk
 
     def _decrypt_chunk_data(self, rsa, chunk, cipher_block):
+        chunk.decompress_data()
         result = cipher_block.decrypt(rsa, chunk.raw[8:-4])
-        chunk.raw = len(result).to_bytes(4, "big") + bytearray(chunk.raw[4:8]) + result + bytearray(chunk.raw[-4:])
+        compressed_result = bytearray(zlib.compress(result))
+        chunk.raw = len(compressed_result).to_bytes(4, "big") + bytearray(chunk.raw[4:8]) + compressed_result + bytearray(chunk.raw[-4:])
         chunk.update_crc()
         return chunk.raw
