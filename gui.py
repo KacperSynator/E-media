@@ -39,6 +39,7 @@ class GUI:
         self.file_label = tk.Label(
             self.window,
             text=f"File path: {self.png.image_path}",
+            font=("Helvetica", "12", "bold"),
             bg="black",
             fg="white"
         )
@@ -194,7 +195,7 @@ class GUI:
         self.text_scroll.insert(tk.INSERT, self.png.to_string())
         self.text_scroll.configure(state="disabled")
         # grid #
-        self.file_label.grid(row=3, column=0, columnspan=4, sticky="W", padx=10, pady=10)
+        self.file_label.grid(row=4, column=0, columnspan=4, sticky="W", padx=10, pady=10)
         self.bc_label.grid(row=2, column=1, padx=10, pady=10)
         self.rsa_size_label.grid(row=1, column=1, padx=10, pady=10)
         self.mod_key_label.grid(row=0, column=4, padx=10, pady=10)
@@ -216,6 +217,13 @@ class GUI:
         self.block_cipher_cbox.grid(row=2, column=2, padx=10, pady=10, sticky="NSEW")
         self.image.grid(row=3, column=0, columnspan=4, padx=10)
         self.text_scroll.grid(row=3, column=4, columnspan=2, padx=10, sticky="NSEW")
+
+        self.window.columnconfigure(0, weight=1)
+        self.window.columnconfigure(1, weight=1)
+        self.window.columnconfigure(2, weight=1)
+        self.window.columnconfigure(3, weight=1)
+        self.window.columnconfigure(4, weight=1)
+        self.window.columnconfigure(5, weight=3)
         # main loop #
         self.window.mainloop()
 
