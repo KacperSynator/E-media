@@ -1,4 +1,6 @@
 from Crypto.Util.number import getPrime, inverse
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import AES, PKCS1_OAEP
 import math
 
 
@@ -53,3 +55,48 @@ class MyRSA:
         while result >= max_val or math.gcd(result, max_val) != 1:
             result = getPrime(number_of_bits)
         return result
+
+
+class PyRSA:
+    def __init__(self, number_of_bits=1024, generate_keys=False):
+        if generate_keys:
+            self._mod, self._pub_exp, self._pvt_exp = self.generate_keys(number_of_bits)
+        self._num_bits = number_of_bits
+
+    @property
+    def num_bytes(self):
+        return self._num_bits // 8
+
+    @property
+    def pub_exp(self):
+        return self._pub_exp
+
+    @property
+    def pvt_exp(self):
+        return self._pvt_exp
+
+    @property
+    def mod(self):
+        return self._mod
+
+    @property
+    def keys(self):
+        return self._mod, self._pub_exp, self.pvt_exp
+
+    def set_keys(self, mod, pub_exp, pvt_exp):
+        self._mod, self._pub_exp, self._pvt_exp = mod, pub_exp, pvt_exp
+
+    @staticmethod
+    def generate_keys(number_of_bits=1024):
+        key = RSA.generate(number_of_bits)
+        return key.n, key.e, key.d
+
+    def encrypt(self, value):
+        key = RSA.construct(rsa_components=(self._mod, self._pub_exp, self._pvt_exp))
+        cipher = PKCS1_OAEP.new(key)
+        return cipher.encrypt(bytearray(value))
+
+    def decrypt(self, value):
+        key = RSA.construct(rsa_components=(self._mod, self._pub_exp, self._pvt_exp))
+        cipher = PKCS1_OAEP.new(key)
+        return cipher.decrypt(bytearray(value))

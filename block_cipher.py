@@ -1,4 +1,4 @@
-from rsa import MyRSA
+from rsa import MyRSA, PyRSA
 import unittest
 from random import randint
 import abc
@@ -97,7 +97,7 @@ class Counter(BlockCipher):
 
 class TestBlockCiphers(unittest.TestCase):
     @staticmethod
-    def _encrypt_decrypt(block_cipher, data, rsa=MyRSA(1024)):
+    def _encrypt_decrypt(block_cipher, data, rsa=MyRSA(1024, generate_keys=True)):
         enc = block_cipher.encrypt(rsa, bytearray(data))
         dec = block_cipher.decrypt(rsa, enc)
         return dec
