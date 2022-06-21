@@ -43,6 +43,12 @@ class PNGImage:
     def get_image(self) -> Image:
         return Image.open(self.image_path)
 
+    def save_image(self, out_file: str):
+        with open(out_file, "wb") as file:
+            file.write(bytearray(self.header))
+            for chunk in self.chunks:
+                file.write(bytearray(chunk.raw))
+
     def anonymize(self, out_file: str):
         critical_chunks = list(filter(lambda chunk: chunk.name in ["IHDR", "IEND", "PLTE", "IDAT"], self.chunks))
         critical_chunks = list(map(lambda chunk: chunk.raw, critical_chunks))
