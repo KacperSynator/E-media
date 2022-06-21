@@ -4,7 +4,7 @@ import tkinter.scrolledtext as scrolled_text
 from png_image import PNGImage
 from block_cipher import ElectronicCodeBook, Counter
 from PIL import Image, ImageTk
-from rsa import MyRSA
+from rsa import MyRSA, PyRSA
 
 
 class GUI:
@@ -151,6 +151,14 @@ class GUI:
             fg="white",
             command=self.generate_keys,
         )
+        # button for saving images to out.png
+        self.save_button = tk.Button(
+            self.window,
+            text="Save",
+            bg="black",
+            fg="white",
+            command=self.save_image,
+        )
         # block cipher combo_box
         self.block_cipher_cbox = ttk.Combobox(
             self.window,
@@ -212,6 +220,7 @@ class GUI:
         self.image_chunks_button.grid(row=2, column=0, padx=10, pady=10, sticky="NSEW")
         self.encrypt_button.grid(row=0, column=2, padx=10, pady=10, sticky="NSEW")
         self.decrypt_button.grid(row=0, column=3, padx=10, pady=10, sticky="NSEW")
+        self.save_button.grid(row=2, column=3, padx=10, pady=10, sticky="NSEW")
         self.rsa_gen_button.grid(row=1, column=3, padx=10, pady=10, sticky="NSEW")
         self.rsa_size_cbox.grid(row=1, column=2, padx=10, pady=10, sticky="NSEW")
         self.block_cipher_cbox.grid(row=2, column=2, padx=10, pady=10, sticky="NSEW")
@@ -316,7 +325,7 @@ class GUI:
             case 1:
                 self.rsa = MyRSA(num_bits)
             case 2:
-                self.rsa = MyRSA(num_bits)
+                self.rsa = PyRSA(num_bits)
             case _:
                 return messagebox.showinfo('Error', 'RSA not selected')
 
@@ -324,3 +333,6 @@ class GUI:
         self.mod_entry.insert(0, str(self.rsa.mod))
         self.pub_key_entry.insert(0, str(self.rsa.pub_exp))
         self.pvt_key_entry.insert(0, str(self.rsa.pvt_exp))
+
+    def save_image(self):
+        self.png.save_image("data/out.png")
