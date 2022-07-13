@@ -2,6 +2,8 @@
 Graphical application for extracting, and displaying PNG images metadata, calculating and displaying fft. Images can
 also be anonymized and encrypted using RSA algorithm.
 
+![image](https://user-images.githubusercontent.com/62207289/178807543-01301941-6e50-4708-ba01-bd583730020b.png)
+
 ## Supported chunks
 Every valid chunk will be parsed but not every chunk's data is being parsed. 
 #### Supported chunks for data parsing:
@@ -24,6 +26,11 @@ Every valid chunk will be parsed but not every chunk's data is being parsed.
 * `sPLT`: suggested palette
 * `eXIf`: exchangeable image file format data
 
+## RSA
+The app uses 2 diffrent RSA implementations:  
+  1. Custom one implemented by us  
+  2. Using PyCryptodome library (currently only key generation works)
+
 ## Getting Started
 1. Clone repo
 ```
@@ -43,3 +50,9 @@ conda create --name <env_name> --file requirements.txt
 ```
 python main.py
 ```
+
+## Authors 
+
+Contributors names and contact info
+* Kacper Synator  (https://github.com/KacperSynator)
+* Paweł Potoczek (https://github.com/PPotoczek)
